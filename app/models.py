@@ -4,6 +4,8 @@ class User(db.Model):
 	id = db.Column(db.Integer, primary_key=True)
 	name = db.Column(db.String(64), index=True, unique=True)
 	phone_number = db.Column(db.Integer)
+	geo = db.Column(db.String(64))
+	radius = db.Column(db.Float) 
 	requests = db.relationship('Request', backref='user', lazy='dynamic')
 
 	def __repr__(self):
