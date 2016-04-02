@@ -11,6 +11,9 @@ class User(db.Model):
 	def __repr__(self):
 		return '<User %r>' % (self.name)
 
+	def as_dict(self):
+		return {c.name: getattr(self, c.name) for c in self.__table__.columns}
+		
 class Request(db.Model):
 	id = db.Column(db.Integer, primary_key=True)
 	title = db.Column(db.String(140))

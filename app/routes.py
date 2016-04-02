@@ -50,6 +50,27 @@ def new_request():
 	else:
 		return abort(415)
 
+@app.route('/requests/<int:request_id>', methods=['PUT'])
+def update_request(request_id):
+	data = request.get_json
+	req = Request.query.get(request_id)
+	geo_string = str(data["lat"]) + " " + str(data["long"])	
+	if data["title"] != req.title:
+		req.title = data["title"]
+	if data["description"] != req.description:
+		req.description = data["description"]
+	if geo_string != req.geo:
+		req.geo = geo_string
+	db.session.commit()
+	return "200 OK"
+
+@app.route('/requests/<int:request_id>', methods=['DELETE'])
+def delete_request(request_id):
+	req = Request.query.get(request_id)
+	db.session.delete(req)
+	db.session.commit()
+	return "200 OK"
+
 @app.route('/users/<int:user_id>/requests', methods=['GET'])
 def get_requests(user_id):
 	user = User.query.get(user_id)
