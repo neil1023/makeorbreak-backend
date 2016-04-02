@@ -1,7 +1,7 @@
 from app import app, db
 from flask import request, Response, jsonify, abort
 
-from .helpers import request_format_okay
+from .helpers import request_format_okay, to_radians, haversine
 from .models import User, Request
 
 @app.route('/')
@@ -46,6 +46,21 @@ def new_request():
 		user.requests.append(new_request)
 		db.session.add(new_request)
 		db.session.commit()
-		return "200 OK"
+		return jsonify({'id': new_request.id})
 	else:
 		return abort(415)
+
+@app.route('/users/<int:user_id>/requests', methods=['GET'])
+def get_requests(user_id):
+	user = User.query.get(user_id)
+	[user_lat, user_long] = [to_radians(float(x)) for x in user.geo.split(" ")]
+	user_radius = user.radius
+	requests = Request.query.all()
+	response = {"requests":[]}
+	for r in requests:
+		[req_lat, req_long] = [to_radians(float(x)) for x in r.geo.split(" ")]
+		d = haversine(user_lat, user_long, req_lat, req_long)
+		print(d)
+		if d <= user_radius:
+			response["requests"].append(r.as_dict())
+	return jsonify(response)
