@@ -1,5 +1,5 @@
 from app import app, db
-from flask import request, Response, jsonify
+from flask import request, Response, jsonify, abort
 
 from .helpers import request_format_okay
 from .models import User
@@ -8,14 +8,18 @@ from .models import User
 def index():
 	return "Hello World!"
 
-@app.route('/usernamevalid', methods=['POST'])
-def username_valid():
+@app.route('/signin', methods=['POST'])
+def signin():
 	if request_format_okay(request):
 		data = request.get_json()
 		user = User.query.filter_by(name=data["username"]).first()
 		if user is None:
-			return jsonify({'valid': True})
+			geo_string = str(data["lat"]) + " " + str(data["long"])
+			new_user = User(name=data["username"], phone_number=data["phone_number"], geo=geo_string, radius=data["radius"])
+			db.session.add(new_user)
+			db.session.commit()
+			return "200 OK"
 		else:
-			return jsonify({'valid': False})
+			return abort(403)
 	else:
-		return "415 Unsupported Media Type"
+		return abort(415)
