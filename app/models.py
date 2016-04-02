@@ -2,7 +2,7 @@ from app import db
 
 class User(db.Model):
 	id = db.Column(db.Integer, primary_key=True)
-	name = db.Column(db.String(64), index=True)
+	name = db.Column(db.String(64), index=True, unique=True)
 	phone_number = db.Column(db.Integer)
 	requests = db.relationship('Request', backref='user', lazy='dynamic')
 

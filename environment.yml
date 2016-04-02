@@ -12,5 +12,11 @@ dependencies:
 - werkzeug=0.11.5=py35_0
 - wheel=0.29.0=py35_0
 - pip:
+  - decorator==4.0.9
   - flask-sqlalchemy==2.1
+  - pbr==1.8.1
+  - six==1.10.0
+  - sqlalchemy-migrate==0.10.0
+  - sqlparse==0.1.19
+  - tempita==0.5.2
 
