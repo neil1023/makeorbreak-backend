@@ -23,3 +23,15 @@ def signin():
 			return abort(403)
 	else:
 		return abort(415)
+
+@app.route('/update_coordinates', methods=['POST'])
+def update_coordinates():
+	if request_format_okay(request):
+		data = request.get_json()
+		user = User.query.filter_by(name=data["username"]).first()
+		geo_string = str(data["lat"]) + " " + str(data["long"])
+		user.geo = geo_string
+		db.session.commit()
+		return "200 OK"
+	else:
+		return abort(415)
