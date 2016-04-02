@@ -35,3 +35,15 @@ def update_coordinates():
 		return "200 OK"
 	else:
 		return abort(415)
+
+# Base64 Encoding image upload
+@app.route('/clarifai', methods=['POST'])
+def clarifai():
+	if request_format_okay(request):
+		data = request.get_json()
+		user = User.query.filter_by(name=data["username"]).first()
+		# Store request in request id
+
+		return "200 OK"
+	else:
+		return abort(415)
