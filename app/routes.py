@@ -22,7 +22,13 @@ def signin():
             new_user = User(name=data["username"], phone_number=data["phone_number"], geo=geo_string, radius=data["radius"])
             db.session.add(new_user)
             db.session.commit()
-            return jsonify({'id': new_user.id})
+
+            identity = new_user.name
+			device_id = new_user.device_id
+
+            token = generate_twilio_token(identity, device_id)
+
+            return jsonify({'id': new_user.id, 'username': identity, 'token': token.to_jwt()})
         else:
             return abort(403)
     else:
@@ -58,7 +64,7 @@ def clarifai():
         f.close()
 
         clarifai_api = ClarifaiApi() # assumes environment variables are set
-        result = clarifai_api.tag_images(open('./imageToSave.png', 'rb'))
+        result = clarifai_api.tag_images(open('./imageToSave.png', 'r'))
         return result
     else:
         return abort(415)
