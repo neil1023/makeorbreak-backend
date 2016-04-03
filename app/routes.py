@@ -76,7 +76,7 @@ def new_request():
     if request_format_okay(request):
         data = request.get_json()
         user = User.query.get(data["user_id"])
-        new_request = Request(title=data["request"]["title"], description=data["request"]["description"], lat = data["request"]["lat"], lon=data["request"]["lon"], geo=geo_string, price=data["request"]["price"])
+        new_request = Request(title=data["request"]["title"], description=data["request"]["description"], lat = data["request"]["lat"], lon=data["request"]["long"], price=data["request"]["price"])
         print(new_request)
         user.requests.append(new_request)
         db.session.add(new_request)
@@ -112,15 +112,32 @@ def delete_request(request_id):
 
 @app.route('/users/<int:user_id>/requests', methods=['GET'])
 def get_requests(user_id):
+    requests = Request.query.filter_by(user_id=user_id)
+    response = {"requests":[]}
+    for r in requests:
+        response["requests"].append(r)
+    return jsonify(response)
+
+@app.route('/users/<int:user_id>/requests/local', methods=['GET'])
+def get_local_requests(user_id):
     user = User.query.get(user_id) 
     user_radius = user.radius
     requests = Request.query.filter_by(claimed=-1)
     response = {"requests":[]}
     for r in requests:
         d = haversine(user.lat, user.lon, r.lat, r.lon)
-        print(d)
+        # print(d)
         if d <= user_radius:
             response["requests"].append(r.as_dict())
+    print(response)
+    return jsonify(response)
+
+@app.route('/users/<int:user_id>/requests/claimed', methods=['GET'])
+def get_claimed_requests(user_id):
+    requests = Request.query.filter_by(claimed=user_id)
+    response = {"requests":[]}
+    for r in requests:
+        response["requests"].append(r)
     return jsonify(response)
 
 @app.route('/requests/<int:request_id>/claim', methods=['POST'])
