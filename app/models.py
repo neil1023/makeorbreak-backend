@@ -11,12 +11,18 @@ class User(db.Model):
 	def __repr__(self):
 		return '<User %r>' % (self.name)
 
+	def as_dict(self):
+		return {c.name: getattr(self, c.name) for c in self.__table__.columns}
+		
 class Request(db.Model):
 	id = db.Column(db.Integer, primary_key=True)
 	title = db.Column(db.String(140))
 	image_encoded = db.Column(db.String(256))
+	description = db.Column(db.String(1000))
 	geo = db.Column(db.String(64))
 	user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
 
 	def __repr__(self):
 		return '<Request %r>' % (self.title[:10])
+	def as_dict(self):
+		return {c.name: getattr(self, c.name) for c in self.__table__.columns}
