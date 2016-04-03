@@ -128,3 +128,7 @@ def add_tag_to_request(req, tag):
 def remove_tag_from_user(user, tag):
     tag = Tag.query.filter_by(keyword=tag).first()
     user.tags.remove(tag)
+
+def remove_tag_from_request(req, tag):
+    tag = Tag.query.filter_by(keyword=tag).first()
+    req.tags.remove(tag)
