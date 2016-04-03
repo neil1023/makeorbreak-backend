@@ -43,7 +43,7 @@ class Request(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     claimed = db.Column(db.Integer, default=-1)
     price = db.Column(db.Float)
-    breaker_name = db.Column(db.String(64), nullable=False)
+    breaker_name = db.Column(db.String(64), nullable=True)
     fixer_name = db.Column(db.String(64), nullable=True)
 
     tags = db.relationship('Tag', secondary=request_tag_association_table, backref='requests', lazy='dynamic')    
