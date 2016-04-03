@@ -24,5 +24,6 @@ dependencies:
   - sqlalchemy-migrate==0.10.0
   - sqlparse==0.1.19
   - tempita==0.5.2
+  - tinys3==0.1.11
   - twilio==5.4.0
 
