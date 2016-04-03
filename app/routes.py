@@ -57,7 +57,7 @@ def clarifai():
 
         fileName = id_generator() + ".png"
         fh = open(fileName, "wb")
-        fh.write(base64.decodestring(image_url))
+        fh.write(base64.b64decode(image_url))
         fh.close()
 
         conn = tinys3.Connection("AKIAIX6NSVB22AGEHNDQ","2MNcMkJIxLiJxAl7B5mwxjrIBmpQru4ODsKKNCDN",tls=True)
@@ -66,7 +66,7 @@ def clarifai():
         f.close()
 
         clarifai_api = ClarifaiApi() # assumes environment variables are set
-        result = clarifai_api.tag_images(open(fileName, 'rb'))
+        result = clarifai_api.tag_images(open(fileName, 'rb', encoding="utf-8"))
         return result
     else:
         return abort(415)
@@ -115,7 +115,7 @@ def get_requests(user_id):
     requests = Request.query.filter_by(user_id=user_id)
     response = {"requests":[]}
     for r in requests:
-        response["requests"].append(r)
+        response["requests"].append(r.as_dict())
     return jsonify(response)
 
 @app.route('/users/<int:user_id>/requests/local', methods=['GET'])
@@ -137,7 +137,7 @@ def get_claimed_requests(user_id):
     requests = Request.query.filter_by(claimed=user_id)
     response = {"requests":[]}
     for r in requests:
-        response["requests"].append(r)
+        response["requests"].append(r.as_dict())
     return jsonify(response)
 
 @app.route('/requests/<int:request_id>/claim', methods=['POST'])
