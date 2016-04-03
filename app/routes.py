@@ -4,7 +4,7 @@ from clarifai.client import ClarifaiApi
 import base64
 import tinys3
 
-from .helpers import request_format_okay, to_radians, haversine
+from .helpers import request_format_okay, to_radians, haversine, generate_twilio_token
 from .models import User, Request
 
 @app.route('/')
@@ -112,3 +112,4 @@ def get_requests(user_id):
         if d <= user_radius:
             response["requests"].append(r.as_dict())
     return jsonify(response)
+
