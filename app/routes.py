@@ -105,7 +105,7 @@ def get_requests(user_id):
 	user = User.query.get(user_id)
 	[user_lat, user_long] = [to_radians(float(x)) for x in user.geo.split(" ")]
 	user_radius = user.radius
-	requests = Request.query.filter_by(claimed=False)
+	requests = Request.query.filter_by(claimed=-1)
 	response = {"requests":[]}
 	for r in requests:
 		[req_lat, req_long] = [to_radians(float(x)) for x in r.geo.split(" ")]
