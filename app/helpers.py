@@ -3,6 +3,10 @@ import requests
 import json
 from math import asin, cos, sin, pi, sqrt
 from twilio.access_token import AccessToken, IpMessagingGrant
+from app import db
+from .models import Tag
+from sqlalchemy.exc import InvalidRequestError, IntegrityError
+import app.rake
 
 EARTH_RAD = 3959.0
 
@@ -83,3 +87,48 @@ def bank_transfer(payer_id, payee_id, amount):
     else:
         print(transfer_response.json()["message"])
         return False
+
+def generate_keywords(request_title, request_description):
+    rake_object = app.rake.Rake("app/SmartStoplist.txt", 3, 2, 1)
+    title_keywords = rake_object.run(request_title)
+    description_keywords = rake_object.run(request_description)
+    keywords = {}
+    for (word, value) in title_keywords:
+        keywords[word] = value*1.5
+    for (word, value) in description_keywords:
+        if word in keywords:
+            keywords[word] += value
+        else:
+            keywords[word] = value
+    
+    keyword_array = []
+    for word in keywords:
+        keyword_array.append((word, keywords[word]))
+    keyword_array.sort(key=lambda tup: tup[1], reverse=True)
+    return keyword_array[:5]
+
+def add_tag_to_user(user, tag):
+    if not user.tags.filter_by(keyword=tag).first():
+        existing_tag = Tag.query.filter_by(keyword=tag).first()
+        if existing_tag is None:
+            new_tag = Tag(keyword=tag)
+            db.session.add(new_tag)
+        existing_tag = Tag.query.filter_by(keyword=tag).first()
+        user.tags.append(existing_tag)
+
+def add_tag_to_request(req, tag):
+    if not req.tags.filter_by(keyword=tag).first():
+        existing_tag = Tag.query.filter_by(keyword=tag).first()
+        if existing_tag is None:
+            new_tag = Tag(keyword=tag)
+            db.session.add(new_tag)
+        existing_tag = Tag.query.filter_by(keyword=tag).first()
+        req.tags.append(existing_tag)
+
+def remove_tag_from_user(user, tag):
+    tag = Tag.query.filter_by(keyword=tag).first()
+    user.tags.remove(tag)
+
+def remove_tag_from_request(req, tag):
+    tag = Tag.query.filter_by(keyword=tag).first()
+    req.tags.remove(tag)
