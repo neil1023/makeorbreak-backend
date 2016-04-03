@@ -131,6 +131,14 @@ def delete_request(request_id):
     db.session.commit()
     return "200 OK"
 
+@app.route('/requests/<int:request_id>/tags', methods=['GET'])
+def get_request_tags(request_id):
+    req = Request.query.get(request_id)
+    response = {"tags":[]}
+    for tag in req.tags.all():
+        response["tags"].append(tag.keyword)
+    return jsonify(response)
+
 @app.route('/requests/<int:request_id>/tags/update', methods=['POST'])
 def update_request_tags(request_id):
     if request_format_okay(request):
@@ -174,6 +182,14 @@ def get_claimed_requests(user_id):
     response = {"requests":[]}
     for r in requests:
         response["requests"].append(r.as_dict())
+    return jsonify(response)
+
+@app.route('/users/<int:user_id>/tags', methods=['GET'])
+def get_user_tags(user_id):
+    req = User.query.get(user_id)
+    response = {"tags":[]}
+    for tag in req.tags.all():
+        response["tags"].append(tag.keyword)
     return jsonify(response)
 
 @app.route('/users/<int:user_id>/tags/update', methods=['POST'])
