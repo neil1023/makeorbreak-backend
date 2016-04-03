@@ -147,7 +147,7 @@ def update_request_tags(request_id):
     if request_format_okay(request):
         data = request.get_json()
         req = Request.query.get(request_id)
-        for tag in data:
+        for tag in data["tags"]:
             if tag["operation"] == "remove":
                 remove_tag_from_request(req, tag["tag"])
             else:
@@ -202,7 +202,7 @@ def update_user_tags(user_id):
     if request_format_okay(request):
         data = request.get_json()
         user = User.query.get(user_id)
-        for tag in data:
+        for tag in data["tags"]:
             if tag["operation"] == "remove":
                 remove_tag_from_user(user, tag["tag"])
             else:
