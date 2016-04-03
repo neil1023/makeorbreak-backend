@@ -1,13 +1,15 @@
 from app import app, db
 from flask import request, Response, jsonify, abort
 from clarifai.client import ClarifaiApi
+import base64
+import tinys3
 
 from .helpers import request_format_okay, to_radians, haversine, generate_twilio_token, create_bank_account, bank_transfer
 from .models import User, Request
 
 @app.route('/')
 def index():
-	return "Hello World!"
+    return "Hello World!"
 
 @app.route('/signin', methods=['POST'])
 def signin():
@@ -37,29 +39,38 @@ def signin():
 
 @app.route('/update_coordinates', methods=['POST'])
 def update_coordinates():
-	if request_format_okay(request):
-		data = request.get_json()
-		user = User.query.get(data["user_id"])
-		geo_string = str(data["lat"]) + " " + str(data["long"])
-		user.geo = geo_string
-		db.session.commit()
-		return "200 OK"
-	else:
-		return abort(415)
+    if request_format_okay(request):
+        data = request.get_json()
+        user = User.query.get(data["user_id"])
+        geo_string = str(data["lat"]) + " " + str(data["long"])
+        user.geo = geo_string
+        db.session.commit()
+        return jsonify({'id': user.id})
+    else:
+        return abort(415)
 
 @app.route('/clarifai', methods=['POST'])
 def clarifai():
-	if request_format_okay(request):
-		data = request.get_json()
-		request_id = Request.query.filter_by(data["request_id"]).first()
-		image_encoded = str(data["image_encoded"] + "")
-		db.session.commit()
+    if request_format_okay(request):
+        data = request.get_json()
+        request_id = Request.query.get(data["request_id"])
+        image_encoded = str(data["image_encoded"] + "")
+        db.session.commit()
 
-		clarifai_api = ClarifaiApi() # assumes environment variables are set
-		result = clarifai_api.tag_images(image_encoded.decode('base64'))
-		return result
-	else:
-		return abort(415)
+        fh = open("imageToSave.png", "wb")
+        fh.write(base64.b64decode(image_encoded))
+        fh.close()
+
+        conn = tinys3.Connection("AKIAIX6NSVB22AGEHNDQ","2MNcMkJIxLiJxAl7B5mwxjrIBmpQru4ODsKKNCDN",tls=True)
+        f = open('imageToSave.png','rb')
+        conn.upload('imageToSave.png',f,'make-or-break')
+        f.close()
+
+        clarifai_api = ClarifaiApi() # assumes environment variables are set
+        result = clarifai_api.tag_images(open('./imageToSave.png', 'rb'))
+        return result
+    else:
+        return abort(415)
 
 @app.route('/requests', methods=['POST'])
 def new_request():
@@ -78,27 +89,27 @@ def new_request():
 
 @app.route('/requests/<int:request_id>', methods=['PUT'])
 def update_request(request_id):
-	if request_format_okay(request):
-		data = request.get_json()
-		req = Request.query.get(request_id)
-		geo_string = str(data["lat"]) + " " + str(data["long"])	
-		if data["title"] != req.title:
-			req.title = data["title"]
-		if data["description"] != req.description:
-			req.description = data["description"]
-		if geo_string != req.geo:
-			req.geo = geo_string
-		db.session.commit()
-		return "200 OK"
-	else:
-		return abort(415)
+    if request_format_okay(request):
+        data = request.get_json()
+        req = Request.query.get(request_id)
+        geo_string = str(data["lat"]) + " " + str(data["long"])
+        if data["title"] != req.title:
+            req.title = data["title"]
+        if data["description"] != req.description:
+            req.description = data["description"]
+        if geo_string != req.geo:
+            req.geo = geo_string
+        db.session.commit()
+        return "200 OK"
+    else:
+        return abort(415)
 
 @app.route('/requests/<int:request_id>', methods=['DELETE'])
 def delete_request(request_id):
-	req = Request.query.get(request_id)
-	db.session.delete(req)
-	db.session.commit()
-	return "200 OK"
+    req = Request.query.get(request_id)
+    db.session.delete(req)
+    db.session.commit()
+    return "200 OK"
 
 @app.route('/users/<int:user_id>/requests', methods=['GET'])
 def get_requests(user_id):
