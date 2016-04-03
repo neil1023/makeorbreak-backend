@@ -9,8 +9,7 @@ from .models import User, Request
 
 @app.route('/')
 def index():
-	resp = Response("Hello world!", status=200, mimetype='application/json')
-	return resp
+	return "Hello World!"
 
 @app.route('/signin', methods=['POST'])
 def signin():
@@ -19,7 +18,7 @@ def signin():
 		user = User.query.filter_by(name=data["username"]).first()
 		if user is None:
 			geo_string = str(data["lat"]) + " " + str(data["long"])
-			new_user = User(name=data["username"], phone_number=data["phone_number"], geo=geo_string, radius=data["radius"])
+			new_user = User(name=data["username"], phone_number=data["phone_number"], geo=geo_string, radius=data["radius"], device_id=data["device_id"])
 			db.session.add(new_user)
 			db.session.commit()
 
@@ -38,11 +37,11 @@ def signin():
 def update_coordinates():
 	if request_format_okay(request):
 		data = request.get_json()
-		user = User.query.filter_by(id=data["user_id"]).first()
+		user = User.query.get(data["user_id"])
 		geo_string = str(data["lat"]) + " " + str(data["long"])
 		user.geo = geo_string
 		db.session.commit()
-		return jsonify({'id': user.id})
+		return "200 OK"
 	else:
 		return abort(415)
 
@@ -85,17 +84,20 @@ def new_request():
 
 @app.route('/requests/<int:request_id>', methods=['PUT'])
 def update_request(request_id):
-	data = request.get_json
-	req = Request.query.get(request_id)
-	geo_string = str(data["lat"]) + " " + str(data["long"])
-	if data["title"] != req.title:
-		req.title = data["title"]
-	if data["description"] != req.description:
-		req.description = data["description"]
-	if geo_string != req.geo:
-		req.geo = geo_string
-	db.session.commit()
-	return "200 OK"
+	if request_format_okay(request):
+		data = request.get_json()
+		req = Request.query.get(request_id)
+		geo_string = str(data["lat"]) + " " + str(data["long"])
+		if data["title"] != req.title:
+			req.title = data["title"]
+		if data["description"] != req.description:
+			req.description = data["description"]
+		if geo_string != req.geo:
+			req.geo = geo_string
+		db.session.commit()
+		return "200 OK"
+	else:
+		return abort(415)
 
 @app.route('/requests/<int:request_id>', methods=['DELETE'])
 def delete_request(request_id):
@@ -109,7 +111,7 @@ def get_requests(user_id):
 	user = User.query.get(user_id)
 	[user_lat, user_long] = [to_radians(float(x)) for x in user.geo.split(" ")]
 	user_radius = user.radius
-	requests = Request.query.all()
+	requests = Request.query.filter_by(claimed=False)
 	response = {"requests":[]}
 	for r in requests:
 		[req_lat, req_long] = [to_radians(float(x)) for x in r.geo.split(" ")]
@@ -119,3 +121,20 @@ def get_requests(user_id):
 			response["requests"].append(r.as_dict())
 	return jsonify(response)
 
+@app.route('/requests/<int:request_id>/claim', methods=['POST'])
+def claim(request_id):
+	if request_format_okay(request):
+		data = request.get_json()
+		user = User.query.get(data["user_id"])
+		req = Request.query.get(request_id)
+		req.claimed = True
+		db.session.commit()
+		return jsonify({"breaker_username": User.query.get(req.user_id).name, "username": user.name})
+	else:
+		return abort(415)
+
+@app.route('/requests/<int:request_id>/claim/cancel', methods=['POST'])
+def cancel_claim(request_id):
+	req.claimed = False
+	db.session.commit()
+	return "200 OK"
