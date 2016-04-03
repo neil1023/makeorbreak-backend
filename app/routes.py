@@ -215,11 +215,14 @@ def claim(request_id):
     if request_format_okay(request):
         data = request.get_json()
         user = User.query.get(data["user_id"])
-        req = Request.query.get(request_id)
-        req.claimed = user.id
-        req.fixer_name = user.name
-        db.session.commit()
-        return jsonify({"breaker_username": User.query.get(req.user_id).name, "username": user.name})
+        if user.id != req.user_id:
+            req = Request.query.get(request_id)
+            req.claimed = user.id
+            req.fixer_name = user.name
+            db.session.commit()
+            return jsonify({"breaker_username": User.query.get(req.user_id).name, "username": user.name})
+        else:
+            return abort(500)
     else:
         return abort(415)
 
