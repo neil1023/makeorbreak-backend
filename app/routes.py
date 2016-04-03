@@ -1,5 +1,6 @@
 from app import app, db
 from flask import request, Response, jsonify, abort
+from clarifai.client import ClarifaiApi
 
 from .helpers import request_format_okay
 from .models import User
@@ -41,9 +42,12 @@ def update_coordinates():
 def clarifai():
 	if request_format_okay(request):
 		data = request.get_json()
-		user = User.query.filter_by(name=data["username"]).first()
-		# Store request in request id
+		request_id = Request.query.filter_by(data["request_id"]).first()
+		image_encoded = str(data["image_encoded"] + "")
+		db.session.commit()
 
-		return "200 OK"
+		clarifai_api = ClarifaiApi() # assumes environment variables are set
+		result = clarifai_api.tag_images(image_encoded.decode('base64'))
+		return result
 	else:
 		return abort(415)
