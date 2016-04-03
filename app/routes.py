@@ -29,7 +29,7 @@ def signin():
 def update_coordinates():
 	if request_format_okay(request):
 		data = request.get_json()
-		user = User.query.filter_by(name=data["username"]).first()
+		user = User.query.get(data["user_id"])
 		geo_string = str(data["lat"]) + " " + str(data["long"])
 		user.geo = geo_string
 		db.session.commit()
@@ -55,7 +55,7 @@ def clarifai():
 def new_request():
 	if request_format_okay(request):
 		data = request.get_json()
-		user = User.query.filter_by(name=data["username"]).first()
+		user = User.query.get(data["user_id"])
 		geo_string = str(data["request"]["lat"]) + " " + str(data["request"]["long"])
 		new_request = Request(title=data["request"]["title"], description=data["request"]["description"], geo=geo_string)
 		user.requests.append(new_request)
@@ -67,17 +67,20 @@ def new_request():
 
 @app.route('/requests/<int:request_id>', methods=['PUT'])
 def update_request(request_id):
-	data = request.get_json
-	req = Request.query.get(request_id)
-	geo_string = str(data["lat"]) + " " + str(data["long"])	
-	if data["title"] != req.title:
-		req.title = data["title"]
-	if data["description"] != req.description:
-		req.description = data["description"]
-	if geo_string != req.geo:
-		req.geo = geo_string
-	db.session.commit()
-	return "200 OK"
+	if request_format_okay(request):
+		data = request.get_json
+		req = Request.query.get(request_id)
+		geo_string = str(data["lat"]) + " " + str(data["long"])	
+		if data["title"] != req.title:
+			req.title = data["title"]
+		if data["description"] != req.description:
+			req.description = data["description"]
+		if geo_string != req.geo:
+			req.geo = geo_string
+		db.session.commit()
+		return "200 OK"
+	else:
+		return abort(415)
 
 @app.route('/requests/<int:request_id>', methods=['DELETE'])
 def delete_request(request_id):
@@ -91,7 +94,7 @@ def get_requests(user_id):
 	user = User.query.get(user_id)
 	[user_lat, user_long] = [to_radians(float(x)) for x in user.geo.split(" ")]
 	user_radius = user.radius
-	requests = Request.query.all()
+	requests = Request.query.filter_by(claimed=False)
 	response = {"requests":[]}
 	for r in requests:
 		[req_lat, req_long] = [to_radians(float(x)) for x in r.geo.split(" ")]
@@ -100,3 +103,15 @@ def get_requests(user_id):
 		if d <= user_radius:
 			response["requests"].append(r.as_dict())
 	return jsonify(response)
+
+@app.route('/requests/<int:request_id>/claim', methods=['POST'])
+def claim(request_id):
+	if request_format_okay(request):
+		data = request.get_json()
+		user = User.query.get(data["user_id"])
+		req = Request.query.get(request_id)
+		req.claimed = True
+		db.session.commit()
+		return jsonify({"breaker_id": req.user_id})
+	else:
+		return abort(415)

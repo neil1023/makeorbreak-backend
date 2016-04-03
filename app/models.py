@@ -21,7 +21,8 @@ class Request(db.Model):
 	description = db.Column(db.String(1000))
 	geo = db.Column(db.String(64))
 	user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-
+	claimed = db.Column(db.Boolean)
+	
 	def __repr__(self):
 		return '<Request %r>' % (self.title[:10])
 	def as_dict(self):
