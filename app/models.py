@@ -20,7 +20,7 @@ class User(db.Model):
 class Request(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(140))
-    # image_encoded = db.Column(db.Text)
+    image_url = db.Column(db.String(200))
     description = db.Column(db.String(1000))
     lat = db.Column(db.Float)
     lon = db.Column(db.Float)

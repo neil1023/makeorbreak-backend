@@ -50,10 +50,10 @@ def update_coordinates():
 @app.route('/clarifai', methods=['POST'])
 def clarifai():
     if request_format_okay(request):
+        s3_base_url = 'https://make-or-break.s3.amazonaws.com/'
         data = request.get_json()
-        request_id = Request.query.get(data["request_id"])
+        request_obj = Request.query.get(data["request_id"])
         image_url = str(data["image_encoded"] + "")
-        db.session.commit()
 
         fileName = id_generator() + ".png"
         fh = open(fileName, "wb")
@@ -65,9 +65,15 @@ def clarifai():
         conn.upload(fileName, f, 'make-or-break')
         f.close()
 
+        s3_url = s3_base_url + fileName
+
+        request_obj.image_url = s3_url
+        db.session.commit()
+
         clarifai_api = ClarifaiApi() # assumes environment variables are set
-        result = clarifai_api.tag_images(open(fileName, 'rb', encoding="utf-8"))
-        return result
+        # result = clarifai_api.tag_images(final_binary_str)
+        result = clarifai_api.tag_image_urls(s3_base_url + fileName)
+        return jsonify(result)
     else:
         return abort(415)
 
