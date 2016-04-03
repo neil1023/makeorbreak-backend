@@ -6,7 +6,8 @@ class User(db.Model):
 	phone_number = db.Column(db.Integer)
 	geo = db.Column(db.String(64))
 	radius = db.Column(db.Float)
-	device_id = db.Column(db.String(128), unique=True)
+	device_id = db.Column(db.String(256), unique=True)
+	account_id = db.Column(db.String(256), unique=True)
 	requests = db.relationship('Request', backref='user', lazy='dynamic')
 
 	def __repr__(self):
