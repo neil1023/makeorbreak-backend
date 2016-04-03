@@ -52,10 +52,10 @@ def clarifai():
     if request_format_okay(request):
         data = request.get_json()
         request_id = Request.query.get(data["request_id"])
-        image_url = str(data["image_url"] + "")
+        image_url = str(data["image_encoded"] + "")
         db.session.commit()
 
-        fileName = ''.join(id_generator(), ".png")
+        fileName = id_generator() + ".png"
         fh = open(fileName, "wb")
         fh.write(base64.decodestring(image_url))
         fh.close()

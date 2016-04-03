@@ -20,10 +20,10 @@ def haversine(lat1, long1, lat2, long2):
     return d
 
 def generate_twilio_token(identity, device_id):
-    account_sid = os.environ['TWILIO_ACCOUNT_SID']
-    api_key = os.environ['TWILIO_API_KEY']
-    api_secret = os.environ['TWILIO_API_SECRET']
-    service_sid = os.environ['TWILIO_IPM_SERVICE_SID']
+    account_sid = os.environ.get('TWILIO_ACCOUNT_SID')
+    api_key = os.environ.get('TWILIO_API_KEY')
+    api_secret = os.environ.get('TWILIO_API_SECRET')
+    service_sid = os.environ.get('TWILIO_IPM_SERVICE_SID')
 
     endpoint = "MakeOrBreak:{0}:{1}".format(identity, device_id)
 
@@ -39,7 +39,7 @@ def id_generator(size=30, chars=string.ascii_uppercase + string.digits):
 
 def create_bank_account(bank_object):
     print(bank_object)
-    api_key = os.environ["CAPITALONE_API_KEY"]
+    api_key = os.environ.get("CAPITALONE_API_KEY")
     new_customer_url = 'http://api.reimaginebanking.com/customers?key={}'.format(api_key)
     new_customer_response = requests.post(new_customer_url, data=json.dumps(bank_object), headers={'content-type':'application/json'})
     
@@ -67,7 +67,7 @@ def create_bank_account(bank_object):
     return new_account_response.json()["objectCreated"]["_id"]
 
 def bank_transfer(payer_id, payee_id, amount):
-    api_key = os.environ["CAPITALONE_API_KEY"]
+    api_key = os.environ.get("CAPITALONE_API_KEY")
     url = 'http://api.reimaginebanking.com/accounts/{}/transfers?key={}'.format(payer_id, api_key)
 
     payload = {
