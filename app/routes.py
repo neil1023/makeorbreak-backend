@@ -74,7 +74,7 @@ def new_request():
 @app.route('/requests/<int:request_id>', methods=['PUT'])
 def update_request(request_id):
 	if request_format_okay(request):
-		data = request.get_json
+		data = request.get_json()
 		req = Request.query.get(request_id)
 		geo_string = str(data["lat"]) + " " + str(data["long"])	
 		if data["title"] != req.title:
