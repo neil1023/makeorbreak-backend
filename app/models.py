@@ -24,6 +24,7 @@ class Request(db.Model):
 	geo = db.Column(db.String(64))
 	user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
 	claimed = db.Column(db.Integer, default=-1)
+	price = db.Column(db.Float)
 
 	def __repr__(self):
 		return '<Request %r>' % (self.title[:10])

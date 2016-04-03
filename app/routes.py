@@ -67,7 +67,7 @@ def new_request():
 		data = request.get_json()
 		user = User.query.get(data["user_id"])
 		geo_string = str(data["request"]["lat"]) + " " + str(data["request"]["long"])
-		new_request = Request(title=data["request"]["title"], description=data["request"]["description"], geo=geo_string)
+		new_request = Request(title=data["request"]["title"], description=data["request"]["description"], geo=geo_string, price=data["request"]["price"])
 		print(new_request)
 		user.requests.append(new_request)
 		db.session.add(new_request)
@@ -142,7 +142,7 @@ def complete_claim(request_id):
 		fixer = User.query.filter_by(name=data["username"]).first()
 		breaker = User.query.get(req.user_id)
 		
-		if bank_transfer(breaker.account_id, fixer.account_id, data["amount"]):		
+		if bank_transfer(breaker.account_id, fixer.account_id, req.price):		
 			db.session.delete(req)
 			db.session.commit()
 			return "200 OK"
