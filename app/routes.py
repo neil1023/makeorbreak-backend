@@ -2,7 +2,7 @@ from app import app, db
 from flask import request, Response, jsonify, abort
 from clarifai.client import ClarifaiApi
 
-from .helpers import request_format_okay, to_radians, haversine, generate_twilio_token
+from .helpers import request_format_okay, to_radians, haversine, generate_twilio_token, create_bank_account, bank_transfer
 from .models import User, Request
 
 @app.route('/')
@@ -15,8 +15,12 @@ def signin():
 		data = request.get_json()
 		user = User.query.filter_by(name=data["username"]).first()
 		if user is None:
-			geo_string = str(data["lat"]) + " " + str(data["long"])
-			new_user = User(name=data["username"], phone_number=data["phone_number"], geo=geo_string, radius=data["radius"], device_id=data["device_id"])
+			
+			bank_object = {"first_name":data["first_name"], "last_name":data["last_name"], "address":data["address"]}
+			account_id = create_bank_account(bank_object)
+
+			geo_string = str(data["lat"]) + " " + str(data["long"])			
+			new_user = User(name=data["username"], phone_number=data["phone_number"], geo=geo_string, radius=data["radius"], device_id=data["device_id"], account_id=account_id)
 			db.session.add(new_user)
 			db.session.commit()
 
@@ -64,6 +68,7 @@ def new_request():
 		user = User.query.get(data["user_id"])
 		geo_string = str(data["request"]["lat"]) + " " + str(data["request"]["long"])
 		new_request = Request(title=data["request"]["title"], description=data["request"]["description"], geo=geo_string)
+		print(new_request)
 		user.requests.append(new_request)
 		db.session.add(new_request)
 		db.session.commit()
@@ -116,7 +121,7 @@ def claim(request_id):
 		data = request.get_json()
 		user = User.query.get(data["user_id"])
 		req = Request.query.get(request_id)
-		req.claimed = True
+		req.claimed = user.id
 		db.session.commit()
 		return jsonify({"breaker_username": User.query.get(req.user_id).name, "username": user.name})
 	else:
@@ -124,6 +129,24 @@ def claim(request_id):
 
 @app.route('/requests/<int:request_id>/claim/cancel', methods=['POST'])
 def cancel_claim(request_id):
-	req.claimed = False
+	req.claimed = -1
 	db.session.commit()
 	return "200 OK"
+
+@app.route('/requests/<int:request_id>/claim/complete', methods=['POST'])
+def complete_claim(request_id):
+	if request_format_okay(request):	
+		data = request.get_json()
+		req = Request.query.get(request_id)
+
+		fixer = User.query.filter_by(name=data["username"]).first()
+		breaker = User.query.get(req.user_id)
+		
+		if bank_transfer(breaker.account_id, fixer.account_id, data["amount"]):		
+			db.session.delete(req)
+			db.session.commit()
+			return "200 OK"
+		else:
+			return abort(500)
+	else:
+		return abort(415)

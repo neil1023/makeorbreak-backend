@@ -19,11 +19,11 @@ class User(db.Model):
 class Request(db.Model):
 	id = db.Column(db.Integer, primary_key=True)
 	title = db.Column(db.String(140))
-	image_encoded = db.Column(db.Text)
+	# image_encoded = db.Column(db.Text)
 	description = db.Column(db.String(1000))
 	geo = db.Column(db.String(64))
 	user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-	claimed = db.Column(db.Boolean)
+	claimed = db.Column(db.Integer, default=-1)
 
 	def __repr__(self):
 		return '<Request %r>' % (self.title[:10])
