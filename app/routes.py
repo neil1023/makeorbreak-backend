@@ -3,6 +3,7 @@ from flask import request, Response, jsonify, abort
 from clarifai.client import ClarifaiApi
 import base64
 import tinys3
+import os
 
 from .helpers import request_format_okay, to_radians, haversine, generate_twilio_token, id_generator, create_bank_account, bank_transfer, add_tag_to_user, remove_tag_from_user, generate_keywords, add_tag_to_request, remove_tag_from_request
 from .models import User, Request
@@ -74,9 +75,10 @@ def clarifai():
         request_obj.image_url = s3_url
         db.session.commit()
 
+        os.remove(fileName)
+
         clarifai_api = ClarifaiApi() # assumes environment variables are set
-        # result = clarifai_api.tag_images(final_binary_str)
-        result = clarifai_api.tag_image_urls(s3_base_url + fileName)
+        result = clarifai_api.tag_image_urls(s3_url)
         return jsonify(result)
     else:
         return abort(415)
