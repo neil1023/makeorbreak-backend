@@ -3,6 +3,9 @@ import requests
 import json
 from math import asin, cos, sin, pi, sqrt
 from twilio.access_token import AccessToken, IpMessagingGrant
+from app import db
+from .models import Tag
+from sqlalchemy.exc import InvalidRequestError, IntegrityError
 import app.rake
 
 EARTH_RAD = 3959.0
@@ -103,3 +106,25 @@ def generate_keywords(request_title, request_description):
         keyword_array.append((word, keywords[word]))
     keyword_array.sort(key=lambda tup: tup[1], reverse=True)
     return keyword_array[:5]
+
+def add_tag_to_user(user, tag):
+    if not user.tags.filter_by(keyword=tag).first():
+        existing_tag = Tag.query.filter_by(keyword=tag).first()
+        if existing_tag is None:
+            new_tag = Tag(keyword=tag)
+            db.session.add(new_tag)
+        existing_tag = Tag.query.filter_by(keyword=tag).first()
+        user.tags.append(existing_tag)
+
+def add_tag_to_request(req, tag):
+    if not req.tags.filter_by(keyword=tag).first():
+        existing_tag = Tag.query.filter_by(keyword=tag).first()
+        if existing_tag is None:
+            new_tag = Tag(keyword=tag)
+            db.session.add(new_tag)
+        existing_tag = Tag.query.filter_by(keyword=tag).first()
+        req.tags.append(existing_tag)
+
+def remove_tag_from_user(user, tag):
+    tag = Tag.query.filter_by(keyword=tag).first()
+    user.tags.remove(tag)

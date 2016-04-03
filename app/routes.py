@@ -4,7 +4,7 @@ from clarifai.client import ClarifaiApi
 import base64
 import tinys3
 
-from .helpers import request_format_okay, to_radians, haversine, generate_twilio_token, id_generator, create_bank_account, bank_transfer
+from .helpers import request_format_okay, to_radians, haversine, generate_twilio_token, id_generator, create_bank_account, bank_transfer, add_tag_to_user, remove_tag_from_user
 from .models import User, Request
 
 @app.route('/')
@@ -21,7 +21,11 @@ def signin():
             account_id = create_bank_account(bank_object)
 
             new_user = User(name=data["username"], phone_number=data["phone_number"], lat=data["lat"], lon=data["long"], radius=data["radius"], device_id=data["device_id"], account_id=account_id)
+
             db.session.add(new_user)
+            for tag in data["tags"]:
+                add_tag_to_user(new_user, tag)
+
             db.session.commit()
 
             identity = new_user.name
@@ -139,6 +143,21 @@ def get_claimed_requests(user_id):
     for r in requests:
         response["requests"].append(r)
     return jsonify(response)
+
+@app.route('/users/<int:user_id>/tags/update', methods=['POST'])
+def update_user_tags(user_id):
+    if request_format_okay(request):
+        data = request.get_json()
+        user = User.query.get(user_id)
+        for tag in data:
+            if tag["operation"] == "remove":
+                remove_tag_from_user(user, tag["tag"])
+            else:
+                add_tag_to_user(user, tag["tag"])
+        db.session.commit()
+        return "200 OK"
+    else:
+        return abort(415)
 
 @app.route('/requests/<int:request_id>/claim', methods=['POST'])
 def claim(request_id):
