@@ -6,7 +6,8 @@ class User(db.Model):
 	phone_number = db.Column(db.Integer)
 	geo = db.Column(db.String(64))
 	radius = db.Column(db.Float)
-	device_id = db.Column(db.String(128), unique=True)
+	device_id = db.Column(db.String(256), unique=True)
+	account_id = db.Column(db.String(256), unique=True)
 	requests = db.relationship('Request', backref='user', lazy='dynamic')
 
 	def __repr__(self):
@@ -18,11 +19,12 @@ class User(db.Model):
 class Request(db.Model):
 	id = db.Column(db.Integer, primary_key=True)
 	title = db.Column(db.String(140))
-	image_encoded = db.Column(db.Text)
+	# image_encoded = db.Column(db.Text)
 	description = db.Column(db.String(1000))
 	geo = db.Column(db.String(64))
 	user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-	claimed = db.Column(db.Boolean)
+	claimed = db.Column(db.Integer, default=-1)
+	price = db.Column(db.Float)
 
 	def __repr__(self):
 		return '<Request %r>' % (self.title[:10])
