@@ -1,10 +1,6 @@
-<<<<<<< HEAD
 import os, string, random
-=======
-import os
 import requests
 import json
->>>>>>> 501bf33f58d89f28b058c89f2a7ee7edb2bb35d9
 from math import asin, cos, sin, pi, sqrt
 from twilio.access_token import AccessToken, IpMessagingGrant
 
@@ -38,10 +34,9 @@ def generate_twilio_token(identity, device_id):
 
 	return token
 
-<<<<<<< HEAD
 def id_generator(size=30, chars=string.ascii_uppercase + string.digits):
 	return ''.join(random.choice(chars) for _ in range(size))
-=======
+
 def create_bank_account(bank_object):
 	print(bank_object)
 	api_key = os.environ["CAPITALONE_API_KEY"]
@@ -88,4 +83,3 @@ def bank_transfer(payer_id, payee_id, amount):
 	else:
 		print(transfer_response.json()["message"])
 		return False
->>>>>>> 501bf33f58d89f28b058c89f2a7ee7edb2bb35d9
