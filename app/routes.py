@@ -90,12 +90,15 @@ def new_request():
         user = User.query.get(data["user_id"])
         new_request = Request(title=data["request"]["title"], description=data["request"]["description"], lat = data["request"]["lat"], lon=data["request"]["long"], price=data["request"]["price"])
 
-        tags = generate_keywords(data["request"]["title"], data["request"]["description"])
+        tags = data["tags"]
+        syn_tags = generate_keywords(data["request"]["title"], data["request"]["description"])
 
         user.requests.append(new_request)
 
         db.session.add(new_request)
-        for (tag, value) in tags:
+        for (tag, value) in syn_tags:
+            add_tag_to_request(new_request, tag)
+        for tag in tags:
             add_tag_to_request(new_request, tag)
 
         db.session.commit()
