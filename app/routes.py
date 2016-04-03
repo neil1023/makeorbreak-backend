@@ -59,13 +59,16 @@ def clarifai():
         data = request.get_json()
         request_obj = Request.query.get(data["request_id"])
         image_url = str(data["image_encoded"] + "")
+        file_type = data["file_type"] if data["file_type"] else ".png"
 
-        fileName = id_generator() + ".png"
+        fileName = id_generator() + "." + file_type
         fh = open(fileName, "wb")
         fh.write(base64.b64decode(image_url))
         fh.close()
 
-        conn = tinys3.Connection("AKIAIX6NSVB22AGEHNDQ","2MNcMkJIxLiJxAl7B5mwxjrIBmpQru4ODsKKNCDN",tls=True)
+        aws_key = os.environ.get('AWS_KEY')
+        aws_secret = os.environ.get('AWS_SECRET')
+        conn = tinys3.Connection(aws_key, aws_secret, tls=True)
         f = open(fileName, 'rb')
         conn.upload(fileName, f, 'make-or-break')
         f.close()
