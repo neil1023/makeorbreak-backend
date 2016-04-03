@@ -4,7 +4,7 @@ from clarifai.client import ClarifaiApi
 import base64
 import tinys3
 
-from .helpers import request_format_okay, to_radians, haversine, generate_twilio_token, create_bank_account, bank_transfer
+from .helpers import request_format_okay, to_radians, haversine, generate_twilio_token, id_generator, create_bank_account, bank_transfer
 from .models import User, Request
 
 @app.route('/')
@@ -17,12 +17,10 @@ def signin():
         data = request.get_json()
         user = User.query.filter_by(name=data["username"]).first()
         if user is None:
-            
             bank_object = {"first_name":data["first_name"], "last_name":data["last_name"], "address":data["address"]}
             account_id = create_bank_account(bank_object)
 
-            geo_string = str(data["lat"]) + " " + str(data["long"])         
-            new_user = User(name=data["username"], phone_number=data["phone_number"], geo=geo_string, radius=data["radius"], device_id=data["device_id"], account_id=account_id)
+            new_user = User(name=data["username"], phone_number=data["phone_number"], lat=data["lat"], lon=data["long"], radius=data["radius"], device_id=data["device_id"], account_id=account_id)
             db.session.add(new_user)
             db.session.commit()
 
@@ -42,8 +40,8 @@ def update_coordinates():
     if request_format_okay(request):
         data = request.get_json()
         user = User.query.get(data["user_id"])
-        geo_string = str(data["lat"]) + " " + str(data["long"])
-        user.geo = geo_string
+        user.lat = data["lat"]
+        user.lon = data["long"]
         db.session.commit()
         return jsonify({'id': user.id})
     else:
@@ -54,20 +52,21 @@ def clarifai():
     if request_format_okay(request):
         data = request.get_json()
         request_id = Request.query.get(data["request_id"])
-        image_encoded = str(data["image_encoded"] + "")
+        image_url = str(data["image_encoded"] + "")
         db.session.commit()
 
-        fh = open("imageToSave.png", "wb")
-        fh.write(base64.b64decode(image_encoded))
+        fileName = id_generator() + ".png"
+        fh = open(fileName, "wb")
+        fh.write(base64.decodestring(image_url))
         fh.close()
 
         conn = tinys3.Connection("AKIAIX6NSVB22AGEHNDQ","2MNcMkJIxLiJxAl7B5mwxjrIBmpQru4ODsKKNCDN",tls=True)
-        f = open('imageToSave.png','rb')
-        conn.upload('imageToSave.png',f,'make-or-break')
+        f = open(fileName, 'rb')
+        conn.upload(fileName, f, 'make-or-break')
         f.close()
 
         clarifai_api = ClarifaiApi() # assumes environment variables are set
-        result = clarifai_api.tag_images(open('./imageToSave.png', 'rb'))
+        result = clarifai_api.tag_images(open(fileName, 'rb'))
         return result
     else:
         return abort(415)
@@ -77,8 +76,7 @@ def new_request():
     if request_format_okay(request):
         data = request.get_json()
         user = User.query.get(data["user_id"])
-        geo_string = str(data["request"]["lat"]) + " " + str(data["request"]["long"])
-        new_request = Request(title=data["request"]["title"], description=data["request"]["description"], geo=geo_string, price=data["request"]["price"])
+        new_request = Request(title=data["request"]["title"], description=data["request"]["description"], lat = data["request"]["lat"], lon=data["request"]["long"], price=data["request"]["price"])
         print(new_request)
         user.requests.append(new_request)
         db.session.add(new_request)
@@ -92,13 +90,14 @@ def update_request(request_id):
     if request_format_okay(request):
         data = request.get_json()
         req = Request.query.get(request_id)
-        geo_string = str(data["lat"]) + " " + str(data["long"])
         if data["title"] != req.title:
             req.title = data["title"]
         if data["description"] != req.description:
             req.description = data["description"]
-        if geo_string != req.geo:
-            req.geo = geo_string
+        if data["lat"] != req.lat:
+            req.lat = data["lat"]
+        if data["long"] != req.lon:
+            req.lon = data["long"]
         db.session.commit()
         return "200 OK"
     else:
@@ -113,17 +112,32 @@ def delete_request(request_id):
 
 @app.route('/users/<int:user_id>/requests', methods=['GET'])
 def get_requests(user_id):
-    user = User.query.get(user_id)
-    [user_lat, user_long] = [to_radians(float(x)) for x in user.geo.split(" ")]
+    requests = Request.query.filter_by(user_id=user_id)
+    response = {"requests":[]}
+    for r in requests:
+        response["requests"].append(r)
+    return jsonify(response)
+
+@app.route('/users/<int:user_id>/requests/local', methods=['GET'])
+def get_local_requests(user_id):
+    user = User.query.get(user_id) 
     user_radius = user.radius
     requests = Request.query.filter_by(claimed=-1)
     response = {"requests":[]}
     for r in requests:
-        [req_lat, req_long] = [to_radians(float(x)) for x in r.geo.split(" ")]
-        d = haversine(user_lat, user_long, req_lat, req_long)
-        print(d)
+        d = haversine(user.lat, user.lon, r.lat, r.lon)
+        # print(d)
         if d <= user_radius:
             response["requests"].append(r.as_dict())
+    print(response)
+    return jsonify(response)
+
+@app.route('/users/<int:user_id>/requests/claimed', methods=['GET'])
+def get_claimed_requests(user_id):
+    requests = Request.query.filter_by(claimed=user_id)
+    response = {"requests":[]}
+    for r in requests:
+        response["requests"].append(r)
     return jsonify(response)
 
 @app.route('/requests/<int:request_id>/claim', methods=['POST'])
@@ -161,3 +175,4 @@ def complete_claim(request_id):
             return abort(500)
     else:
         return abort(415)
+
