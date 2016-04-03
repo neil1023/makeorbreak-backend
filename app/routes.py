@@ -171,12 +171,14 @@ def get_local_requests(user_id):
     user_radius = user.radius
     requests = Request.query.filter_by(claimed=-1)
     response = {"requests":[]}
-    for r in requests:
-        d = haversine(user.lat, user.lon, r.lat, r.lon)
-        # print(d)
-        if d <= user_radius:
-            response["requests"].append(r.as_dict())
-    print(response)
+    for tag in user.tags.all():
+        requests = tag.requests.filter_by(claimed=-1).all()
+        for r in requests:
+            d = haversine(user.lat, user.lon, r.lat, r.lon)
+            # print(d)
+            if d <= user_radius:
+                response["requests"].append(r.as_dict())
+    # print(response)
     return jsonify(response)
 
 @app.route('/users/<int:user_id>/requests/claimed', methods=['GET'])

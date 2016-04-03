@@ -25,7 +25,7 @@ class User(db.Model):
     account_id = db.Column(db.String(256), unique=True)
     
     requests = db.relationship('Request', backref='user', lazy='dynamic')
-    tags = db.relationship('Tag', secondary=user_tag_association_table, backref='users', lazy='dynamic')
+    tags = db.relationship('Tag', secondary=user_tag_association_table, backref=db.backref('users', lazy='dynamic'), lazy='dynamic')
 
     def __repr__(self):
         return '<User %r>' % (self.name)
@@ -46,7 +46,7 @@ class Request(db.Model):
     breaker_name = db.Column(db.String(64), nullable=True)
     fixer_name = db.Column(db.String(64), nullable=True)
 
-    tags = db.relationship('Tag', secondary=request_tag_association_table, backref='requests', lazy='dynamic')    
+    tags = db.relationship('Tag', secondary=request_tag_association_table, backref=db.backref('requests', lazy='dynamic'), lazy='dynamic')    
 
     def __repr__(self):
         return '<Request %r>' % (self.title[:10])
