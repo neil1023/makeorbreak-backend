@@ -21,8 +21,7 @@ def signin():
             bank_object = {"first_name":data["first_name"], "last_name":data["last_name"], "address":data["address"]}
             account_id = create_bank_account(bank_object)
 
-            geo_string = str(data["lat"]) + " " + str(data["long"])         
-            new_user = User(name=data["username"], phone_number=data["phone_number"], geo=geo_string, radius=data["radius"], device_id=data["device_id"], account_id=account_id)
+            new_user = User(name=data["username"], phone_number=data["phone_number"], lat=data["lat"], lon=data["long"], radius=data["radius"], device_id=data["device_id"], account_id=account_id)
             db.session.add(new_user)
             db.session.commit()
 
@@ -42,8 +41,8 @@ def update_coordinates():
     if request_format_okay(request):
         data = request.get_json()
         user = User.query.get(data["user_id"])
-        geo_string = str(data["lat"]) + " " + str(data["long"])
-        user.geo = geo_string
+        user.lat = data["lat"]
+        user.lon = data["long"]
         db.session.commit()
         return jsonify({'id': user.id})
     else:
@@ -77,8 +76,7 @@ def new_request():
     if request_format_okay(request):
         data = request.get_json()
         user = User.query.get(data["user_id"])
-        geo_string = str(data["request"]["lat"]) + " " + str(data["request"]["long"])
-        new_request = Request(title=data["request"]["title"], description=data["request"]["description"], geo=geo_string, price=data["request"]["price"])
+        new_request = Request(title=data["request"]["title"], description=data["request"]["description"], lat = data["request"]["lat"], lon=data["request"]["lon"], geo=geo_string, price=data["request"]["price"])
         print(new_request)
         user.requests.append(new_request)
         db.session.add(new_request)
@@ -92,13 +90,14 @@ def update_request(request_id):
     if request_format_okay(request):
         data = request.get_json()
         req = Request.query.get(request_id)
-        geo_string = str(data["lat"]) + " " + str(data["long"])
         if data["title"] != req.title:
             req.title = data["title"]
         if data["description"] != req.description:
             req.description = data["description"]
-        if geo_string != req.geo:
-            req.geo = geo_string
+        if data["lat"] != req.lat:
+            req.lat = data["lat"]
+        if data["long"] != req.lon:
+            req.lon = data["long"]
         db.session.commit()
         return "200 OK"
     else:
@@ -113,14 +112,12 @@ def delete_request(request_id):
 
 @app.route('/users/<int:user_id>/requests', methods=['GET'])
 def get_requests(user_id):
-    user = User.query.get(user_id)
-    [user_lat, user_long] = [to_radians(float(x)) for x in user.geo.split(" ")]
+    user = User.query.get(user_id) 
     user_radius = user.radius
     requests = Request.query.filter_by(claimed=-1)
     response = {"requests":[]}
     for r in requests:
-        [req_lat, req_long] = [to_radians(float(x)) for x in r.geo.split(" ")]
-        d = haversine(user_lat, user_long, req_lat, req_long)
+        d = haversine(user.lat, user.lon, r.lat, r.lon)
         print(d)
         if d <= user_radius:
             response["requests"].append(r.as_dict())
