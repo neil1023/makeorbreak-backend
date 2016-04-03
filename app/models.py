@@ -6,6 +6,7 @@ class User(db.Model):
 	phone_number = db.Column(db.Integer)
 	geo = db.Column(db.String(64))
 	radius = db.Column(db.Float)
+	device_id = db.Column(db.String(128), unique=True)
 	requests = db.relationship('Request', backref='user', lazy='dynamic')
 
 	def __repr__(self):
@@ -22,7 +23,7 @@ class Request(db.Model):
 	geo = db.Column(db.String(64))
 	user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
 	claimed = db.Column(db.Boolean)
-	
+
 	def __repr__(self):
 		return '<Request %r>' % (self.title[:10])
 	def as_dict(self):

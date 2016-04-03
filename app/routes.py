@@ -2,7 +2,7 @@ from app import app, db
 from flask import request, Response, jsonify, abort
 from clarifai.client import ClarifaiApi
 
-from .helpers import request_format_okay, to_radians, haversine
+from .helpers import request_format_okay, to_radians, haversine, generate_twilio_token
 from .models import User, Request
 
 @app.route('/')
@@ -16,10 +16,16 @@ def signin():
 		user = User.query.filter_by(name=data["username"]).first()
 		if user is None:
 			geo_string = str(data["lat"]) + " " + str(data["long"])
-			new_user = User(name=data["username"], phone_number=data["phone_number"], geo=geo_string, radius=data["radius"])
+			new_user = User(name=data["username"], phone_number=data["phone_number"], geo=geo_string, radius=data["radius"], device_id=data["device_id"])
 			db.session.add(new_user)
 			db.session.commit()
-			return jsonify({'id': new_user.id})
+
+			identity = new_user.name
+			device_id = new_user.device_id
+
+			token = generate_twilio_token(identity, device_id)
+
+			return jsonify({'id': new_user.id, 'username': identity, 'token': token.to_jwt()})
 		else:
 			return abort(403)
 	else:
@@ -112,11 +118,11 @@ def claim(request_id):
 		req = Request.query.get(request_id)
 		req.claimed = True
 		db.session.commit()
-		return jsonify({"breaker_id": req.user_id})
+		return jsonify({"breaker_username": User.query.get(req.user_id).name, "username": user.name})
 	else:
 		return abort(415)
 
-@app.route('/requests/<int:request_id/claim/cancel', methods=['POST'])
+@app.route('/requests/<int:request_id>/claim/cancel', methods=['POST'])
 def cancel_claim(request_id):
 	req.claimed = False
 	db.session.commit()
