@@ -115,3 +115,9 @@ def claim(request_id):
 		return jsonify({"breaker_id": req.user_id})
 	else:
 		return abort(415)
+
+@app.route('/requests/<int:request_id/claim/cancel', methods=['POST'])
+def cancel_claim(request_id):
+	req.claimed = False
+	db.session.commit()
+	return "200 OK"
