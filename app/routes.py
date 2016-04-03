@@ -91,7 +91,7 @@ def new_request():
     if request_format_okay(request):
         data = request.get_json()
         user = User.query.get(data["user_id"])
-        new_request = Request(title=data["request"]["title"], description=data["request"]["description"], lat = data["request"]["lat"], lon=data["request"]["long"], price=data["request"]["price"])
+        new_request = Request(title=data["request"]["title"], description=data["request"]["description"], lat = data["request"]["lat"], lon=data["request"]["long"], price=data["request"]["price"], breaker_name=user.name)
 
         tags = data["tags"]
         syn_tags = generate_keywords(data["request"]["title"], data["request"]["description"])
@@ -217,6 +217,7 @@ def claim(request_id):
         user = User.query.get(data["user_id"])
         req = Request.query.get(request_id)
         req.claimed = user.id
+        req.fixer_name = user.name
         db.session.commit()
         return jsonify({"breaker_username": User.query.get(req.user_id).name, "username": user.name})
     else:
@@ -225,6 +226,7 @@ def claim(request_id):
 @app.route('/requests/<int:request_id>/claim/cancel', methods=['POST'])
 def cancel_claim(request_id):
     req.claimed = -1
+    req.fixer_name = None
     db.session.commit()
     return "200 OK"
 
