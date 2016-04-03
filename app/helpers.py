@@ -1,4 +1,4 @@
-import os
+import os, string, random
 from math import asin, cos, sin, pi, sqrt
 from twilio.access_token import AccessToken, IpMessagingGrant
 
@@ -31,3 +31,6 @@ def generate_twilio_token(identity, device_id):
 	token.add_grant(ipm_grant)
 
 	return token
+
+def id_generator(size=30, chars=string.ascii_uppercase + string.digits):
+	return ''.join(random.choice(chars) for _ in range(size))

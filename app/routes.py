@@ -4,7 +4,7 @@ from clarifai.client import ClarifaiApi
 import base64
 import tinys3
 
-from .helpers import request_format_okay, to_radians, haversine, generate_twilio_token
+from .helpers import request_format_okay, to_radians, haversine, generate_twilio_token, id_generator
 from .models import User, Request
 
 @app.route('/')
@@ -50,20 +50,21 @@ def clarifai():
     if request_format_okay(request):
         data = request.get_json()
         request_id = Request.query.get(data["request_id"])
-        image_encoded = str(data["image_encoded"] + "")
+        image_url = str(data["image_url"] + "")
         db.session.commit()
 
-        fh = open("imageToSave.png", "wb")
-        fh.write(base64.b64decode(image_encoded))
+        fileName = ''.join(id_generator(), ".png")
+        fh = open(fileName, "wb")
+        fh.write(base64.b64decode(image_url))
         fh.close()
 
         conn = tinys3.Connection("AKIAIX6NSVB22AGEHNDQ","2MNcMkJIxLiJxAl7B5mwxjrIBmpQru4ODsKKNCDN",tls=True)
-        f = open('imageToSave.png','rb')
-        conn.upload('imageToSave.png',f,'make-or-break')
+        f = open(fileName,'rb')
+        conn.upload(fileName,f,'make-or-break')
         f.close()
 
         clarifai_api = ClarifaiApi() # assumes environment variables are set
-        result = clarifai_api.tag_images(open('./imageToSave.png', 'rb'))
+        result = clarifai_api.tag_images(open(fileName, 'rb'))
         return result
     else:
         return abort(415)
@@ -74,7 +75,7 @@ def new_request():
         data = request.get_json()
         user = User.query.get(data["user_id"])
         geo_string = str(data["request"]["lat"]) + " " + str(data["request"]["long"])
-        new_request = Request(title=data["request"]["title"], description=data["request"]["description"], geo=geo_string)
+        new_request = Request(title=data["request"]["title"], description=data["request"]["description"], geo=geo_string, image_encoded=data["image_url"])
         user.requests.append(new_request)
         db.session.add(new_request)
         db.session.commit()
